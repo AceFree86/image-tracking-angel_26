@@ -22,8 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initially, show only the animation box
   startButton.style.display = "none";
-  startButton.textContent = ""; 
-  
+  startButton.textContent = "";
+
   // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
@@ -55,16 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
     (gltf) => {
       const model = gltf.scene;
       model.position.set(0, 0, 0);
-      model.rotation.set(0, 0, 0); // Reset rotation
+      model.rotation.set(0, 0, 0);
       model.scale.set(1, 1, 1);
-      groupM.add(model);
 
-      // Initialize Animation Mixer
-      mixer = new THREE.AnimationMixer(model);
-      if (gltf.animations.length > 0) {
-        const action = mixer.clipAction(gltf.animations[0]); // Play first animation
-        action.play();
-      }
+      [0, 1, 2].forEach((i) => {
+        const anchor = mindarThree.addAnchor(i); // Створюємо анкори для 0, 1 і 2
+
+        const modelClone = model.clone();
+        anchor.group.add(modelClone);
+      });
     },
     (xhr) => {
       if (errorDisplay) {
@@ -85,14 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
         errorDisplay.style.fontSize = "20px";
       }
       //console.error(`Error: ${error.message}`);
-    }
+    },
   );
 
-  [0, 1, 2].forEach((i) => {
-    const anchor = mindarThree.addAnchor(i); // Створюємо анкори для 0, 1 і 2
-
-    anchor.group.add(groupM);
-  });
+ 
 
   // Start AR
   const start = async () => {
@@ -119,12 +114,12 @@ document.addEventListener("DOMContentLoaded", () => {
     location.reload();
   });
 
-   document.addEventListener("contextmenu", (e) => e.preventDefault());
-   document.addEventListener("keydown", (e) => {
-     if (e.ctrlKey && (e.key === "u" || e.key === "s" || e.key === "j")) {
-       e.preventDefault();
-     }
-   });
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && (e.key === "u" || e.key === "s" || e.key === "j")) {
+      e.preventDefault();
+    }
+  });
 
   // Toggle AR on Button Click
   startButton.addEventListener("click", () => {
