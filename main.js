@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load the GLTF model
   const url =
-    "https://acefree86.github.io/image-tracking-angel_26/assets/models/Angel.glb";
+    "https://acefree86.github.io/image-tracking-angel_26/assets/models/angel.glb";
   const loader = new GLTFLoader();
 
   loader.load(
