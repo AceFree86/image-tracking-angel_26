@@ -29,11 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
   scene.add(ambientLight);
 
   const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight1.position.set(5, 5, 5);
+  directionalLight1.position.set(2, 5, 5);
   scene.add(directionalLight1);
 
   const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight2.position.set(-5, -5, 5);
+  directionalLight2.position.set(-2, -2, 5);
   scene.add(directionalLight2);
 
   const groupM = new THREE.Group();
