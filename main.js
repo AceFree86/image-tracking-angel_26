@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const mindarThree = new MindARThree({
     container: document.querySelector("#container"),
     imageTargetSrc:
-      "https://github.com/AceFree86/image-tracking-angel_26/blob/main/assets/Image/targets.mind",
+      "https://acefree86.github.io/image-tracking-angel_26/assets/Image/targets.mind",
     filterMinCF: 0.1,
     filterBeta: 10,
     warmupTolerance: 1,
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const anchorIndex = parseInt(urlParams.get("index")) || 0;
   const modelUrl =
-    "https://github.com/AceFree86/image-tracking-angel_26/blob/main/assets/models/Angel.glb";
+    "https://acefree86.github.io/image-tracking-angel_26/assets/models/Angel.glb";
 
   loader.load(
     modelUrl,
