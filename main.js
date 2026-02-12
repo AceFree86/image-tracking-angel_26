@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { MindARThree } from "mindar-image-three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Ініціалізація MindAR
   const mindarThree = new MindARThree({
     container: document.querySelector("#container"),
     imageTargetSrc:
@@ -16,18 +16,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  // Елементи DOM
   const boxAnimashen = document.querySelector(".box");
   const startButton = document.querySelector("#startButton");
   const errorDisplay = document.querySelector("#error-message");
   let isRunning = false;
 
-  // Початкові стани елементів
+  // Спочатку показуємо анімацію завантаження, кнопку ховаємо
   startButton.style.display = "none";
+  startButton.textContent = "";
   errorDisplay.textContent = "";
-  boxAnimashen.style.display = "block"; // Показуємо анімацію завантаження
 
-  // Освітлення сцени
+  // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
@@ -39,118 +38,118 @@ document.addEventListener("DOMContentLoaded", () => {
   directionalLight2.position.set(-5, -5, 5);
   scene.add(directionalLight2);
 
-  // Глобальні змінні для моделі та анкора
   const groupM = new THREE.Group();
   let mixer;
-  let anchor; // Змінна для анкора
+  let anchor;
+
+  // Отримуємо anchorIndex з URL
   const urlParams = new URLSearchParams(window.location.search);
   const anchorIndex = parseInt(urlParams.get("index")) || 0;
 
-  // Иавантаження моделі
-  const modelUrl =
-    "https://acefree86.github.io/image-tracking-angel_26/assets/models/angel.glb"; // ✅ lower-case!
+  // Налаштовуємо GLTFLoader + DRACOLoader
   const loader = new GLTFLoader();
-
-  // -------------------------------------------------
-  // Додаємо DRACO-стиснення (якщо модель використовує Draco)
-  // -------------------------------------------------
   const dracoLoader = new DRACOLoader();
-  // Використовуємо актуальний CDN для DRACO (версія має співпадати з Three.js)
   dracoLoader.setDecoderPath(
     "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/",
   );
   loader.setDRACOLoader(dracoLoader);
 
-  // -------------------------------------------------
-  // Завантаження моделі
-  // -------------------------------------------------
+  const url =
+    "https://acefree86.github.io/image-tracking-angel_26/assets/models/angel.glb";
+
   loader.load(
-    modelUrl,
-    // ✅ Успішне завантаження — ТУТ робимо ВСЕ!
+    url,
+    // ✅ onLoad — модель завантажена повністю
     (gltf) => {
-      // 1. Налаштування моделі
       const model = gltf.scene;
       model.position.set(0, 0, 0);
       model.rotation.set(0, 0, 0);
       model.scale.set(1, 1, 1);
       groupM.add(model);
 
-      // 2. Анімація (якщо є)
+      // Ініціалізація анімації
       mixer = new THREE.AnimationMixer(model);
       if (gltf.animations.length > 0) {
         const action = mixer.clipAction(gltf.animations[0]);
         action.play();
       }
 
-      // 3. Створюємо анкор ТІЛЬКИ ПІСЛЯ завантаження моделі!
+      // Додаємо groupM до анкора ТІЛЬКИ після завантаження моделі
       anchor = mindarThree.addAnchor(anchorIndex);
-      anchor.group.add(groupM); // Додаємо groupM до анкора
+      anchor.group.add(groupM);
 
-      // 4. Ховаємо анімацію завантаження, показуємо кнопку
+      // Показуємо кнопку "Старт" ТІЛЬКИ після успішного завантаження
       boxAnimashen.style.display = "none";
       startButton.style.display = "block";
       startButton.textContent = "Старт";
       errorDisplay.textContent = "";
-      errorDisplay.style.color = "transparent";
+      errorDisplay.style.display = "none";
 
-      console.log("✅ Модель успішно завантажена!");
+      console.log("✅ Модель завантажена успішно");
     },
-    // 🔄 Прогрес завантаження
+    // ℹ️ onProgress — показуємо прогрес, але НЕ змінюємо UI
     (xhr) => {
-      const percent = Math.round((xhr.loaded / xhr.total) * 100);
-      console.log(`Завантажено: ${percent}%`);
-      // errorDisplay.textContent = `Завантаження: ${percent}%`; // Опційно
+      if (xhr.total > 0) {
+        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+        console.log(`Завантаження моделі: ${percent}%`);
+      }
     },
-    // ❌ Помилка завантаження
+    // ❌ onError — показуємо помилку
     (error) => {
-      console.error("🔴 ПОМИЛКА ЗАВАНТАЖЕННЯ МОДЕЛІ:", error);
       boxAnimashen.style.display = "none";
-      startButton.style.display = "none";
       errorDisplay.textContent = "Помилка завантаження моделі";
       errorDisplay.style.color = "red";
       errorDisplay.style.fontSize = "20px";
+      errorDisplay.style.display = "block";
+      console.error("🔴 ПОМИЛКА ЗАВАНТАЖЕННЯ МОДЕЛІ:", error);
     },
   );
 
-  // -------------------------------------------------
-  // Керування AR
-  // -------------------------------------------------
-  const startAR = async () => {
+  // Використовуємо clock для точного deltaTime
+  const clock = new THREE.Clock();
+
+  // Start AR
+  const start = async () => {
     try {
       await mindarThree.start();
+      clock.start();
       renderer.setAnimationLoop(() => {
-        if (mixer) mixer.update(0.016); // Оновлення анімації
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
         renderer.render(scene, camera);
       });
       isRunning = true;
       startButton.textContent = "Стоп";
     } catch (err) {
-      console.error("⚠️ Помилка старту AR:", err);
-      errorDisplay.textContent = "Помилка запуску AR";
+      console.error("🔴 Помилка запуску AR:", err);
+      errorDisplay.textContent = "Помилка запуску камери";
       errorDisplay.style.color = "red";
+      errorDisplay.style.display = "block";
     }
   };
 
-  const stopAR = () => {
+  // Stop AR
+  const stop = () => {
     mindarThree.stop();
     renderer.setAnimationLoop(null);
+    clock.stop();
     isRunning = false;
     startButton.textContent = "Старт";
   };
 
-  // Перезавантаження при зміні вкладки (уникнення багів MindAR)
+  // При зміні видимості сторінки — перезавантаження
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      location.reload();
+    if (document.hidden && isRunning) {
+      stop();
     }
   });
 
-  // Кнопка запуску/зупинки
+  // Toggle AR по кліку
   startButton.addEventListener("click", () => {
     if (isRunning) {
-      stopAR();
+      stop();
     } else {
-      startAR();
+      start();
     }
   });
 });
