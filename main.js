@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const anchorIndex = parseInt(urlParams.get("index")) || 0;
   const modelUrl =
-    "https://acefree86.github.io/image-tracking-angel_26/assets/models/Angel.glb";
+    "https://acefree86.github.io/image-tracking-angel_26/assets/models/angel.glb";
 
   loader.load(
     modelUrl,
