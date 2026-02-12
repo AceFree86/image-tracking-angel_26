@@ -88,8 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   );
 
-  const anchor = mindarThree.addAnchor(anchorIndex);
-  anchor.group.add(groupM);
+  [0, 1, 2].forEach((i) => {
+    const anchor = mindarThree.addAnchor(i); // Створюємо анкори для 0, 1 і 2
+
+    anchor.group.add(groupM);
+  });
 
   // Start AR
   const start = async () => {
