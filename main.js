@@ -16,103 +16,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  const boxAnimashen = document.querySelector(".box");
+  const boxAnimashen = document.querySelector(".box"); // Ваш лоадер
   const startButton = document.querySelector("#startButton");
   const errorDisplay = document.querySelector("#error-message");
   let isRunning = false;
+  let mixer;
 
-  // Спочатку показуємо анімацію завантаження, кнопку ховаємо
+  // Початковий стан UI
   startButton.style.display = "none";
-  startButton.textContent = "";
-  errorDisplay.textContent = "";
+  if (errorDisplay) errorDisplay.style.display = "none";
 
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(0, 10, 10);
+  scene.add(directionalLight);
 
-  const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight1.position.set(5, 5, 5);
-  scene.add(directionalLight1);
-
-  const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight2.position.set(-5, -5, 5);
-  scene.add(directionalLight2);
-
-  const groupM = new THREE.Group();
-  let mixer;
-  let anchor;
-
-  // Отримуємо anchorIndex з URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const anchorIndex = parseInt(urlParams.get("index")) || 0;
-
-  // Налаштовуємо GLTFLoader + DRACOLoader
+  // Налаштування завантажувача з DRACO
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
+  // Використовуємо стабільний CDN для декодера
   dracoLoader.setDecoderPath(
-    "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/",
+    "https://www.gstatic.com/draco/versioned/decoders/1.5.6/",
   );
   loader.setDRACOLoader(dracoLoader);
 
-  const url =
-    "https://acefree86.github.io/image-tracking-angel_26/assets/models/angel.glb";
+  const urlParams = new URLSearchParams(window.location.search);
+  const anchorIndex = parseInt(urlParams.get("index")) || 0;
+  const modelUrl =
+    "https://acefree86.github.io/image-tracking-angel_26/assets/models/Angel.glb";
 
   loader.load(
-    url,
-    // ✅ onLoad — модель завантажена повністю
+    modelUrl,
+    // ✅ УСПІШНЕ ЗАВАНТАЖЕННЯ
     (gltf) => {
       const model = gltf.scene;
-      model.position.set(0, 0, 0);
-      model.rotation.set(0, 0, 0);
-      model.scale.set(1, 1, 1);
+      const groupM = new THREE.Group();
       groupM.add(model);
 
-      // Ініціалізація анімації
       mixer = new THREE.AnimationMixer(model);
       if (gltf.animations.length > 0) {
-        const action = mixer.clipAction(gltf.animations[0]);
-        action.play();
+        mixer.clipAction(gltf.animations[0]).play();
       }
 
-      // Додаємо groupM до анкора ТІЛЬКИ після завантаження моделі
-      anchor = mindarThree.addAnchor(anchorIndex);
+      const anchor = mindarThree.addAnchor(anchorIndex);
       anchor.group.add(groupM);
 
-      // Показуємо кнопку "Старт" ТІЛЬКИ після успішного завантаження
-      boxAnimashen.style.display = "none";
-      startButton.style.display = "block";
-      startButton.textContent = "Старт";
-      errorDisplay.textContent = "";
-      errorDisplay.style.display = "none";
-
-      console.log("✅ Модель завантажена успішно");
+      // Даємо браузеру 200мс "відпочити" після парсингу важкої моделі
+      setTimeout(() => {
+        if (boxAnimashen) boxAnimashen.style.display = "none";
+        startButton.style.display = "block";
+        startButton.textContent = "Старт";
+        console.log("✅ Модель готова до використання");
+      }, 200);
     },
-    // ℹ️ onProgress — показуємо прогрес, але НЕ змінюємо UI
+    // ℹ️ ПРОГРЕС ЗАВАНТАЖЕННЯ
     (xhr) => {
       if (xhr.total > 0) {
         const percent = Math.round((xhr.loaded / xhr.total) * 100);
-        console.log(`Завантаження моделі: ${percent}%`);
+        // Якщо у вас є текст всередині лоадера, оновлюємо його
+        if (boxAnimashen)
+          boxAnimashen.textContent = `Завантаження: ${percent}%`;
       }
     },
-    // ❌ onError — показуємо помилку
+    // ❌ ПОМИЛКА
     (error) => {
-      boxAnimashen.style.display = "none";
-      errorDisplay.textContent = "Помилка завантаження моделі";
-      errorDisplay.style.color = "red";
-      errorDisplay.style.fontSize = "20px";
-      errorDisplay.style.display = "block";
-      console.error("🔴 ПОМИЛКА ЗАВАНТАЖЕННЯ МОДЕЛІ:", error);
+      console.error("Помилка завантаження:", error);
+      if (boxAnimashen) boxAnimashen.style.display = "none";
+      if (errorDisplay) {
+        errorDisplay.style.display = "block";
+        errorDisplay.textContent = "Не вдалося завантажити 3D модель";
+      }
     },
   );
 
-  // Використовуємо clock для точного deltaTime
   const clock = new THREE.Clock();
 
-  // Start AR
   const start = async () => {
     try {
       await mindarThree.start();
-      clock.start();
       renderer.setAnimationLoop(() => {
         const delta = clock.getDelta();
         if (mixer) mixer.update(delta);
@@ -121,35 +104,23 @@ document.addEventListener("DOMContentLoaded", () => {
       isRunning = true;
       startButton.textContent = "Стоп";
     } catch (err) {
-      console.error("🔴 Помилка запуску AR:", err);
-      errorDisplay.textContent = "Помилка запуску камери";
-      errorDisplay.style.color = "red";
-      errorDisplay.style.display = "block";
+      console.error("AR Start Error:", err);
     }
   };
 
-  // Stop AR
   const stop = () => {
     mindarThree.stop();
     renderer.setAnimationLoop(null);
-    clock.stop();
     isRunning = false;
     startButton.textContent = "Старт";
   };
 
-  // При зміні видимості сторінки — перезавантаження
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && isRunning) {
-      stop();
-    }
+  startButton.addEventListener("click", () => {
+    isRunning ? stop() : start();
   });
 
-  // Toggle AR по кліку
-  startButton.addEventListener("click", () => {
-    if (isRunning) {
-      stop();
-    } else {
-      start();
-    }
+  // Автоматичне перезавантаження при зміні вкладки для стабільності камери
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && isRunning) location.reload();
   });
 });
