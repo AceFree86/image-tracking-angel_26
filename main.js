@@ -29,7 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
   scene.add(ambientLight);
 
   const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight1.position.set(2, 5, 5);
+  directionalLight1.position.set(2, -0.45196, 0.32518);
+  const rotationX = THREE.MathUtils.degToRad(68.0914);
+  directionalLight1.rotation.x = rotationX;
   scene.add(directionalLight1);
 
   const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
